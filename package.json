@@ -1,0 +1,33 @@
+{
+  "name": "utakata",
+  "version": "1.0.0",
+  "main": "dist/utakata.cjs.js",
+  "module": "dist/utakata.esm.js",
+  "types": "dist/index.d.ts",
+  "repository": "https://github.com/gejiuyuan/utakata.git",
+  "author": "gejiuyuan <2507188687@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "format": "npx prettier --write .",
+    "format:check": "npx prettier --check .",
+    "check:tsc": "npx tsc --noEmit",
+    "build": "npm run build:rollup",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^3.1.5",
+    "@rollup/plugin-commonjs": "^20.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.0.5",
+    "@types/node": "^16.9.6",
+    "husky": "^7.0.2",
+    "lint-staged": "^11.1.2",
+    "prettier": "2.4.1",
+    "rollup": "^2.57.0",
+    "rollup-plugin-dts": "^4.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.30.0",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  }
+}
