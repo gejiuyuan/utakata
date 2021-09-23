@@ -11,7 +11,7 @@
     "format": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "check:tsc": "npx tsc --noEmit",
-    "build": "npm run build:rollup",
+    "build": "npx rollup --config",
     "prepare": "husky install"
   },
   "devDependencies": {

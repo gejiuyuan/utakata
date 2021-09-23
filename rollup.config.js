@@ -77,7 +77,7 @@ const createBundleconf = (type) => ({
 
 const filesConfs = Object.keys(configs).map(createBundleconf);
 const typesConf = {
-    input: "src/typing/index.d.ts",
+    input: resolve('index.ts'),
     output: [{ 
         file: "dist/index.d.ts", format: "es" 
     }],
