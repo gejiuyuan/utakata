@@ -1,22 +1,22 @@
 {
   "compilerOptions": {
-    "target": "es2015", //rollup目标编译es版本
-    "module": "esnext",
-    "lib": ["DOM", "esnext"],
+    "target": "es2017", //rollup目标编译es版本
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM.Iterable", "DOM", "ES2015.Iterable"],
     "outDir": "dist/lib",
     "rootDir": "src",
     "baseUrl": "./",
     "paths": {},
+    "downlevelIteration": true,
     // "declaration": true,
     // "declarationDir": "dist/types",
     // "declarationMap": true,
     // "sourceMap": true,
-    "downlevelIteration": true,
     "isolatedModules": true,
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],

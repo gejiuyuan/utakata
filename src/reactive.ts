@@ -14,9 +14,7 @@ export const isReactive = (value: any): value is ReactiveValue => {
 
 export function reactive<T extends object>(value: T): ReactiveValue<T> | undefined {
   if (!isReferenceType(value)) {
-    if (process.env.NODE_ENV) {
-      console.warn(`The parameter of 'reactive' must be a object!`);
-    }
+    console.warn(`The parameter of 'reactive' must be a object!`);
     return;
   }
   if (isReactive(value)) {

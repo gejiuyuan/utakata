@@ -1,7 +1,91 @@
-export const objEffectWeakMap = new WeakMap<object, Map<string | symbol, Set<ReactiveEffect>>>();
+import { ReactiveValue } from "./reactive";
+import { CommonFunc } from "./typing";
+import { EMPTY_OBJECT, hasChanged, isFunc, nextTick } from "./utils";
 
-class ReactiveEffect {
-  constructor() {
+export let activeEffect: ReactiveEffect | undefined;
+export const effectStack: ReactiveEffect[] = [];
 
+export type ReactiveEffectFunc = CommonFunc & {
+  effect?: ReactiveEffect;
+}
+export class ReactiveEffect {
+  constructor(
+    public func: ReactiveEffectFunc,
+    public schduler: CommonFunc | null = null
+  ) {
+    this.func = func;
+    this.schduler = schduler;
+  }
+
+  run() {
+    if (!effectStack.includes(this)) {
+      try {
+        effectStack.push(activeEffect = this);
+        return this.func();
+      } finally {
+        effectStack.pop();
+        const { length } = effectStack;
+        activeEffect = length > 0 ? effectStack[length - 1] : void 0;
+      }
+    }
+  }
+}
+
+
+export function effect(
+  func: ReactiveEffectFunc,
+  options?: {
+    lazy?: boolean; //是否延迟执行，用于computed中
+  }
+) {
+  func.effect && (func = func.effect.func);
+  const _effect = new ReactiveEffect(func);
+  if (!options || !options.lazy) {
+    _effect.run();
+  }
+  const runner = _effect.run.bind(_effect);
+  Reflect.set(runner, 'effect', _effect);
+  return runner;
+}
+
+export enum WatcherFlush {
+  async = 'async',
+  sync = 'sync',
+}
+const watcherFlushValues = Object.values(WatcherFlush);
+export interface WatcherOptions {
+  flush?: WatcherFlush;
+  immediate?: boolean;
+}
+
+export function watch(
+  targetSource: () => ReactiveValue | ReactiveValue[],
+  cb: CommonFunc,
+  options: WatcherOptions = EMPTY_OBJECT
+) {
+  if (!isFunc(cb)) {
+    console.error(`The second parameter of 'watch' ———— 'cb' must be a function!`)
+    return;
+  }
+  const { flush = WatcherFlush.async, immediate = false } = options;
+  const targetValueGetter = () => targetSource();
+  let oldValue = {};
+  const baseJob = () => {
+    const newValue = _effect.run();
+    if (hasChanged(newValue, oldValue)) {
+      cb.apply(null, [newValue, oldValue]);
+      oldValue = newValue;
+    }
+  }
+  if (!watcherFlushValues.includes(flush)) {
+    console.warn(`The 'flush' parameter value of 'watch' options should be one of the two options: ${watcherFlushValues.join('、')}`)
+  }
+  const schduler = flush === WatcherFlush.async ? () => nextTick(baseJob) : baseJob;
+  const _effect = new ReactiveEffect(targetValueGetter, schduler);
+
+  if (immediate) {
+    schduler();
+  } else {
+    oldValue = _effect.run();
   }
 }
