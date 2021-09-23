@@ -51,7 +51,6 @@ const configs = {
 
 
 }
- 
 
 const createBundleconf = (type) => ({
 
@@ -67,13 +66,7 @@ const createBundleconf = (type) => ({
         json(),
         typescript({
             useTsconfigDeclarationDir: true
-        }),
-        dts(),
-        {
-            input: "./my-input/index.d.ts",
-            output: [{ file: "dist/my-library.d.ts", format: "es" }],
-            plugins: [],
-          },
+        }), 
     ],
 
     external: [
