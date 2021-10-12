@@ -58,6 +58,7 @@ export interface WatcherOptions {
   immediate?: boolean;
 }
 
+const INITIAL_WATCHER_VALUE = {}
 export function watch(
   targetSource: () => ReactiveValue | ReactiveValue[],
   cb: CommonFunc,
@@ -69,11 +70,11 @@ export function watch(
   }
   const { flush = WatcherFlush.async, immediate = false } = options;
   const targetValueGetter = () => targetSource();
-  let oldValue = {};
+  let oldValue = INITIAL_WATCHER_VALUE;
   const baseJob = () => {
     const newValue = _effect.run();
     if (hasChanged(newValue, oldValue)) {
-      cb.apply(null, [newValue, oldValue]);
+      cb.apply(null, [newValue, oldValue === INITIAL_WATCHER_VALUE ? void 0 : oldValue]);
       oldValue = newValue;
     }
   }
