@@ -12,10 +12,7 @@ export class ReactiveEffect {
   constructor(
     public func: ReactiveEffectFunc,
     public schduler: CommonFunc | null = null
-  ) {
-    this.func = func;
-    this.schduler = schduler;
-  }
+  ) { }
 
   run() {
     if (!effectStack.includes(this)) {
