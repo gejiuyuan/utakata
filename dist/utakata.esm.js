@@ -59,6 +59,7 @@ var WatcherFlush;
     WatcherFlush["sync"] = "sync";
 })(WatcherFlush || (WatcherFlush = {}));
 const watcherFlushValues = Object.values(WatcherFlush);
+const INITIAL_WATCHER_VALUE = {};
 function watch(targetSource, cb, options = EMPTY_OBJECT) {
     if (!isFunc(cb)) {
         console.error(`The second parameter of 'watch' ———— 'cb' must be a function!`);
@@ -66,11 +67,11 @@ function watch(targetSource, cb, options = EMPTY_OBJECT) {
     }
     const { flush = WatcherFlush.async, immediate = false } = options;
     const targetValueGetter = () => targetSource();
-    let oldValue = {};
+    let oldValue = INITIAL_WATCHER_VALUE;
     const baseJob = () => {
-        const newValue = _effect.run();
+        const newValue = _effect.run(); 
         if (hasChanged(newValue, oldValue)) {
-            cb.apply(null, [newValue, oldValue]);
+            cb.apply(null, [newValue, oldValue === INITIAL_WATCHER_VALUE ? void 0 : oldValue]);
             oldValue = newValue;
         }
     };
@@ -110,7 +111,7 @@ function trigger(target, key, newValue, oldValue) {
     if (!targetEffectFuncSet) {
         return;
     }
-    if (hasChanged(newValue, oldValue)) {
+    if (hasChanged(newValue, oldValue)) { 
         Array.from(targetEffectFuncSet).forEach(effectFunc => {
             var _a;
             ((_a = effectFunc.schduler) === null || _a === void 0 ? void 0 : _a.call(effectFunc)) || effectFunc.run();
@@ -150,11 +151,11 @@ function createGetter() {
 function createSetter() {
     return (target, key, newValue) => {
         const oldValue = Reflect.get(target, key);
-        let result = true;
+        let result = true; 
         if (hasChanged(newValue, oldValue)) {
-            trigger(target, key, newValue, oldValue);
             result = Reflect.set(target, key, newValue);
-        }
+            trigger(target, key, newValue, oldValue);
+        } 
         return result;
     };
 }

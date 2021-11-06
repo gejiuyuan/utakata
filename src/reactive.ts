@@ -44,8 +44,8 @@ export function createSetter<T extends PlainObject>() {
     const oldValue = Reflect.get(target, key);
     let result = true;
     if (hasChanged(newValue, oldValue)) {
-      trigger(target, key, newValue, oldValue);
       result = Reflect.set(target, key, newValue);
+      trigger(target, key, newValue, oldValue);
     }
     return result;
   }

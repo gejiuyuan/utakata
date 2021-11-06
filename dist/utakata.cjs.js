@@ -63,6 +63,7 @@ exports.WatcherFlush = void 0;
     WatcherFlush["sync"] = "sync";
 })(exports.WatcherFlush || (exports.WatcherFlush = {}));
 const watcherFlushValues = Object.values(exports.WatcherFlush);
+const INITIAL_WATCHER_VALUE = {};
 function watch(targetSource, cb, options = EMPTY_OBJECT) {
     if (!isFunc(cb)) {
         console.error(`The second parameter of 'watch' ———— 'cb' must be a function!`);
@@ -70,11 +71,11 @@ function watch(targetSource, cb, options = EMPTY_OBJECT) {
     }
     const { flush = exports.WatcherFlush.async, immediate = false } = options;
     const targetValueGetter = () => targetSource();
-    let oldValue = {};
+    let oldValue = INITIAL_WATCHER_VALUE;
     const baseJob = () => {
         const newValue = _effect.run();
         if (hasChanged(newValue, oldValue)) {
-            cb.apply(null, [newValue, oldValue]);
+            cb.apply(null, [newValue, oldValue === INITIAL_WATCHER_VALUE ? void 0 : oldValue]);
             oldValue = newValue;
         }
     };
