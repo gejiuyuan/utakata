@@ -26,8 +26,6 @@ class ReactiveEffect {
     constructor(func, schduler = null) {
         this.func = func;
         this.schduler = schduler;
-        this.func = func;
-        this.schduler = schduler;
     }
     run() {
         if (!effectStack.includes(this)) {
@@ -69,7 +67,7 @@ function watch(targetSource, cb, options = EMPTY_OBJECT) {
     const targetValueGetter = () => targetSource();
     let oldValue = INITIAL_WATCHER_VALUE;
     const baseJob = () => {
-        const newValue = _effect.run(); 
+        const newValue = _effect.run();
         if (hasChanged(newValue, oldValue)) {
             cb.apply(null, [newValue, oldValue === INITIAL_WATCHER_VALUE ? void 0 : oldValue]);
             oldValue = newValue;
@@ -111,7 +109,7 @@ function trigger(target, key, newValue, oldValue) {
     if (!targetEffectFuncSet) {
         return;
     }
-    if (hasChanged(newValue, oldValue)) { 
+    if (hasChanged(newValue, oldValue)) {
         Array.from(targetEffectFuncSet).forEach(effectFunc => {
             var _a;
             ((_a = effectFunc.schduler) === null || _a === void 0 ? void 0 : _a.call(effectFunc)) || effectFunc.run();
@@ -119,45 +117,64 @@ function trigger(target, key, newValue, oldValue) {
     }
 }
 
-const __REACTIVE__ = '__reactive__';
+var ReactiveTargetMarker;
+(function (ReactiveTargetMarker) {
+    ReactiveTargetMarker["__REACTIVE__"] = "__reactive__";
+})(ReactiveTargetMarker || (ReactiveTargetMarker = {}));
 const isReactive = (value) => {
-    return isReferenceType(value) ? Reflect.get(value, __REACTIVE__) : false;
+    return isReferenceType(value) ? Reflect.get(value, ReactiveTargetMarker.__REACTIVE__) : false;
 };
+const reactiveTargetMap = new WeakMap();
 function reactive(value) {
     if (!isReferenceType(value)) {
         console.warn(`The parameter of 'reactive' must be a object!`);
         return;
     }
-    if (isReactive(value)) {
-        return value;
+    // if (isReactive(value)) {
+    //   return value;
+    // }
+    /**
+     * 如果已经是Proxy，直接返回
+     */
+    const targetIsProxy = reactiveTargetMap.get(value);
+    if (targetIsProxy) {
+        return targetIsProxy;
     }
     const proxyObj = new Proxy(value, {
         get: createGetter(),
         set: createSetter(),
     });
-    Reflect.defineProperty(proxyObj, __REACTIVE__, {
-        configurable: false,
+    /**
+     * 可配置以便可删除
+     */
+    Reflect.defineProperty(proxyObj, ReactiveTargetMarker.__REACTIVE__, {
+        configurable: true,
         enumerable: false,
         get: () => true,
     });
+    reactiveTargetMap.set(value, proxyObj);
     return proxyObj;
 }
 function createGetter() {
-    return (target, key, receiver) => {
+    return function get(target, key, receiver) {
+        const res = Reflect.get(target, key);
         track(target, key);
-        return Reflect.get(target, key);
+        if (isReferenceType(res)) {
+            return reactive(res);
+        }
+        return res;
     };
 }
 function createSetter() {
-    return (target, key, newValue) => {
+    return function set(target, key, newValue) {
         const oldValue = Reflect.get(target, key);
-        let result = true; 
+        let result = true;
         if (hasChanged(newValue, oldValue)) {
             result = Reflect.set(target, key, newValue);
             trigger(target, key, newValue, oldValue);
-        } 
+        }
         return result;
     };
 }
 
-export { EMPTY_OBJECT, ReactiveEffect, WatcherFlush, __REACTIVE__, activeEffect, createGetter, createSetter, effect, effectStack, hasChanged, isFunc, isReactive, isReferenceType, nextTick, objEffectWeakMap, reactive, track, trigger, watch };
+export { EMPTY_OBJECT, ReactiveEffect, ReactiveTargetMarker, WatcherFlush, activeEffect, createGetter, createSetter, effect, effectStack, hasChanged, isFunc, isReactive, isReferenceType, nextTick, objEffectWeakMap, reactive, reactiveTargetMap, track, trigger, watch };

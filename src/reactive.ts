@@ -2,45 +2,64 @@ import { track, trigger } from "./deps";
 import { PlainObject } from "./typing";
 import { hasChanged, isReferenceType } from "./utils";
 
-export type ReactiveValue<T extends object = {}> = T & PlainObject & {
-  readonly __reactive__: boolean;
+export type ReactiveIdentification<T extends object = {}> = T & PlainObject & {
+  readonly [ReactiveTargetMarker.__REACTIVE__]?: boolean;
 }
 
-export const __REACTIVE__ = '__reactive__';
-
-export const isReactive = (value: any): value is ReactiveValue => {
-  return isReferenceType(value) ? Reflect.get(value, __REACTIVE__) : false;
+export enum ReactiveTargetMarker {
+  __REACTIVE__ = '__reactive__',
 }
 
-export function reactive<T extends object>(value: T): ReactiveValue<T> | undefined {
+export const isReactive = (value: any): value is ReactiveIdentification => {
+  return isReferenceType(value) ? Reflect.get(value, ReactiveTargetMarker.__REACTIVE__) : false;
+}
+
+export const reactiveTargetMap = new WeakMap<ReactiveIdentification, any>();
+
+export function reactive<T extends object>(value: T): ReactiveIdentification<T> | undefined {
   if (!isReferenceType(value)) {
     console.warn(`The parameter of 'reactive' must be a object!`);
     return;
   }
-  if (isReactive(value)) {
-    return value;
+  // if (isReactive(value)) {
+  //   return value;
+  // }
+  /**
+   * 如果已经是Proxy，直接返回
+   */
+  const targetIsProxy = reactiveTargetMap.get(value);
+  if (targetIsProxy) {
+    return targetIsProxy;
   }
-  const proxyObj = new Proxy(value as ReactiveValue<T>, {
+  const proxyObj = new Proxy<ReactiveIdentification<T>>(value, {
     get: createGetter(),
     set: createSetter(),
   });
-  Reflect.defineProperty(proxyObj, __REACTIVE__, {
-    configurable: false,
+  /**
+   * 可配置以便可删除
+   */
+  Reflect.defineProperty(proxyObj, ReactiveTargetMarker.__REACTIVE__, {
+    configurable: true,
     enumerable: false,
     get: () => true,
   });
+  reactiveTargetMap.set(value, proxyObj);
   return proxyObj;
 }
 
 export function createGetter<T extends PlainObject>() {
-  return (target: T, key: string | symbol, receiver: T) => {
+  return function get(target: T, key: string | symbol, receiver: T) {
+    const res = Reflect.get(target, key);
     track(target, key);
-    return Reflect.get(target, key);
+    if (isReferenceType(res)) {
+      return reactive(res);
+    }
+    return res;
   }
 }
 
 export function createSetter<T extends PlainObject>() {
-  return (target: T, key: string | symbol, newValue: any) => {
+  return function set(target: T, key: string | symbol, newValue: any) {
     const oldValue = Reflect.get(target, key);
     let result = true;
     if (hasChanged(newValue, oldValue)) {

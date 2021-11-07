@@ -30,8 +30,6 @@ class ReactiveEffect {
     constructor(func, schduler = null) {
         this.func = func;
         this.schduler = schduler;
-        this.func = func;
-        this.schduler = schduler;
     }
     run() {
         if (!effectStack.includes(this)) {
@@ -123,42 +121,61 @@ function trigger(target, key, newValue, oldValue) {
     }
 }
 
-const __REACTIVE__ = '__reactive__';
+exports.ReactiveTargetMarker = void 0;
+(function (ReactiveTargetMarker) {
+    ReactiveTargetMarker["__REACTIVE__"] = "__reactive__";
+})(exports.ReactiveTargetMarker || (exports.ReactiveTargetMarker = {}));
 const isReactive = (value) => {
-    return isReferenceType(value) ? Reflect.get(value, __REACTIVE__) : false;
+    return isReferenceType(value) ? Reflect.get(value, exports.ReactiveTargetMarker.__REACTIVE__) : false;
 };
+const reactiveTargetMap = new WeakMap();
 function reactive(value) {
     if (!isReferenceType(value)) {
         console.warn(`The parameter of 'reactive' must be a object!`);
         return;
     }
-    if (isReactive(value)) {
-        return value;
+    // if (isReactive(value)) {
+    //   return value;
+    // }
+    /**
+     * 如果已经是Proxy，直接返回
+     */
+    const targetIsProxy = reactiveTargetMap.get(value);
+    if (targetIsProxy) {
+        return targetIsProxy;
     }
     const proxyObj = new Proxy(value, {
         get: createGetter(),
         set: createSetter(),
     });
-    Reflect.defineProperty(proxyObj, __REACTIVE__, {
-        configurable: false,
+    /**
+     * 可配置以便可删除
+     */
+    Reflect.defineProperty(proxyObj, exports.ReactiveTargetMarker.__REACTIVE__, {
+        configurable: true,
         enumerable: false,
         get: () => true,
     });
+    reactiveTargetMap.set(value, proxyObj);
     return proxyObj;
 }
 function createGetter() {
-    return (target, key, receiver) => {
+    return function get(target, key, receiver) {
+        const res = Reflect.get(target, key);
         track(target, key);
-        return Reflect.get(target, key);
+        if (isReferenceType(res)) {
+            return reactive(res);
+        }
+        return res;
     };
 }
 function createSetter() {
-    return (target, key, newValue) => {
+    return function set(target, key, newValue) {
         const oldValue = Reflect.get(target, key);
         let result = true;
         if (hasChanged(newValue, oldValue)) {
-            trigger(target, key, newValue, oldValue);
             result = Reflect.set(target, key, newValue);
+            trigger(target, key, newValue, oldValue);
         }
         return result;
     };
@@ -166,7 +183,6 @@ function createSetter() {
 
 exports.EMPTY_OBJECT = EMPTY_OBJECT;
 exports.ReactiveEffect = ReactiveEffect;
-exports.__REACTIVE__ = __REACTIVE__;
 exports.createGetter = createGetter;
 exports.createSetter = createSetter;
 exports.effect = effect;
@@ -178,6 +194,7 @@ exports.isReferenceType = isReferenceType;
 exports.nextTick = nextTick;
 exports.objEffectWeakMap = objEffectWeakMap;
 exports.reactive = reactive;
+exports.reactiveTargetMap = reactiveTargetMap;
 exports.track = track;
 exports.trigger = trigger;
 exports.watch = watch;

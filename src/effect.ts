@@ -1,4 +1,4 @@
-import { ReactiveValue } from "./reactive";
+import { ReactiveIdentification } from "./reactive";
 import { CommonFunc } from "./typing";
 import { EMPTY_OBJECT, hasChanged, isFunc, nextTick } from "./utils";
 
@@ -57,7 +57,7 @@ export interface WatcherOptions {
 
 const INITIAL_WATCHER_VALUE = {}
 export function watch(
-  targetSource: () => ReactiveValue | ReactiveValue[],
+  targetSource: () => ReactiveIdentification | ReactiveIdentification[],
   cb: CommonFunc,
   options: WatcherOptions = EMPTY_OBJECT
 ) {
