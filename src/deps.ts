@@ -13,15 +13,19 @@ export const objEffectWeakMap = new WeakMap<
   >
 >();
 
+// 是否应该收集依赖
+let shouldTrack = true;
+
 /**
  * 是否应该暂停追踪依赖
  * @returns 
  * @description
  *  不应该收集的条件：
  *    1、activeEffect为undefined
+ *    2、shouldTrack为false
  */
 export function isPauseTracking() {
-  return activeEffect === void 0;
+  return !shouldTrack && activeEffect === void 0;
 }
 
 /**
@@ -41,11 +45,18 @@ export function track(target: PlainObject, key: string | symbol) {
   let effectFuncDeps = effectDepMap.get(key);
   if (!effectFuncDeps) {
     effectDepMap.set(key, effectFuncDeps = new Set([activeEffect!]))
-  } else {
+  }  
+  trackEffect(effectFuncDeps);
+}
+
+export function trackEffect(effectFuncDeps: Set<ReactiveEffect>) {
+  // 防止重复收集
+  shouldTrack = !effectFuncDeps.has(activeEffect!);
+  if (shouldTrack) {
     effectFuncDeps.add(activeEffect!);
+    // 同时建立响应式数据依赖与activeEffect的双向映射
+    activeEffect!.deps.push(effectFuncDeps);
   }
-  // 同时建立响应式数据依赖与activeEffect的双向映射
-  activeEffect!.deps.push(effectFuncDeps);
 }
 
 /**
