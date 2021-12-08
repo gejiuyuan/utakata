@@ -21,8 +21,11 @@ declare type ReactiveEffectFunc = CommonFunc & {
 declare class ReactiveEffect {
     func: ReactiveEffectFunc;
     schduler: CommonFunc | null;
+    static cleanUpEffect(effect: InstanceType<typeof ReactiveEffect>): void;
+    deps: Set<ReactiveEffect>[];
     constructor(func: ReactiveEffectFunc, schduler?: CommonFunc | null);
     run(): any;
+    stop(): void;
 }
 declare function effect(func: ReactiveEffectFunc, options?: {
     lazy?: boolean;
@@ -35,7 +38,7 @@ interface WatcherOptions {
     flush?: WatcherFlush;
     immediate?: boolean;
 }
-declare function watch(targetSource: () => ReactiveIdentification | ReactiveIdentification[], cb: CommonFunc, options?: WatcherOptions): void;
+declare function watch(targetSource: () => ReactiveIdentification | ReactiveIdentification[], cb: CommonFunc, options?: WatcherOptions): (() => void) | undefined;
 
 declare const objEffectWeakMap: WeakMap<object, Map<string | symbol, Set<ReactiveEffect>>>;
 declare function track(target: PlainObject, key: string | symbol): void;

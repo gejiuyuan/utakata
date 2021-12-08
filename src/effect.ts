@@ -9,6 +9,14 @@ export type ReactiveEffectFunc = CommonFunc & {
   effect?: ReactiveEffect;
 }
 export class ReactiveEffect {
+  static cleanUpEffect(effect: InstanceType<typeof ReactiveEffect>) {
+    const { deps } = effect;
+    deps.forEach((dep) => {
+      dep.delete(effect);
+    });
+    deps.length = 0;
+  }
+  public deps: Set<ReactiveEffect>[] = [];
   constructor(
     public func: ReactiveEffectFunc,
     public schduler: CommonFunc | null = null
@@ -25,6 +33,9 @@ export class ReactiveEffect {
         activeEffect = length > 0 ? effectStack[length - 1] : void 0;
       }
     }
+  }
+  stop() {
+    ReactiveEffect.cleanUpEffect(this);
   }
 }
 
@@ -85,5 +96,8 @@ export function watch(
     schduler();
   } else {
     oldValue = _effect.run();
+  }
+  return () => {
+    _effect.stop();
   }
 }

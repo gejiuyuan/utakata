@@ -30,6 +30,14 @@ class ReactiveEffect {
     constructor(func, schduler = null) {
         this.func = func;
         this.schduler = schduler;
+        this.deps = [];
+    }
+    static cleanUpEffect(effect) {
+        const { deps } = effect;
+        deps.forEach((dep) => {
+            dep.delete(effect);
+        });
+        deps.length = 0;
     }
     run() {
         if (!effectStack.includes(this)) {
@@ -43,6 +51,9 @@ class ReactiveEffect {
                 exports.activeEffect = length > 0 ? effectStack[length - 1] : void 0;
             }
         }
+    }
+    stop() {
+        ReactiveEffect.cleanUpEffect(this);
     }
 }
 function effect(func, options) {
@@ -88,6 +99,9 @@ function watch(targetSource, cb, options = EMPTY_OBJECT) {
     else {
         oldValue = _effect.run();
     }
+    return () => {
+        _effect.stop();
+    };
 }
 
 const objEffectWeakMap = new WeakMap();
@@ -103,6 +117,7 @@ function track(target, key) {
     else {
         effectFuncDeps.add(exports.activeEffect);
     }
+    exports.activeEffect.deps.push(effectFuncDeps);
 }
 function trigger(target, key, newValue, oldValue) {
     const targetDepMap = objEffectWeakMap.get(target);

@@ -21,6 +21,7 @@ export function track(target: PlainObject, key: string | symbol) {
   } else {
     effectFuncDeps.add(activeEffect!);
   }
+  activeEffect!.deps.push(effectFuncDeps);
 }
 
 export function trigger(target: PlainObject, key: string | symbol, newValue: any, oldValue: any) {
