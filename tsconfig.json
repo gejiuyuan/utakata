@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2017", //rollup目标编译es版本
+    "target": "ESNext", //rollup目标编译es版本
     "module": "ESNext",
-    "lib": ["ESNext", "DOM.Iterable", "DOM", "ES2015.Iterable"],
+    "lib": ["ESNext", "DOM"],
     // "outDir": "dist/lib",
     "rootDir": "src",
     "baseUrl": "./",
