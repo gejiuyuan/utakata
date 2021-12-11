@@ -10,7 +10,7 @@
   "scripts": {
     "format": "npx prettier --write .",
     "format:check": "npx prettier --check .",
-    "check:tsc": "npx tsc --noEmit",
+    "check:eslint": "npx eslint",
     "build": "npx rollup --config",
     "prepare": "husky install"
   },
@@ -20,14 +20,17 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.5",
     "@types/node": "^16.9.6",
+    "@typescript-eslint/eslint-plugin": "^5.6.0",
+    "@typescript-eslint/parser": "^5.6.0",
+    "eslint": "^8.4.1",
     "husky": "^7.0.2",
     "lint-staged": "^11.1.2",
     "prettier": "2.4.1",
-    "rollup": "^2.57.0",
+    "rollup": "^2.61.1",
     "rollup-plugin-dts": "^4.0.0",
     "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.30.0",
-    "ts-node": "^10.2.1",
+    "rollup-plugin-typescript2": "^0.31.1",
+    "ts-node": "^10.4.0",
     "typescript": "^4.5.3"
   }
 }

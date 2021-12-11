@@ -1,23 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ESNext", //rollup目标编译es版本
+    "target": "ES2017", //rollup目标编译es版本
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
-    // "outDir": "dist/lib",
     "rootDir": "src",
     "baseUrl": "./",
     "paths": {},
     "downlevelIteration": true,
-    // "declaration": true,
-    // "declarationDir": "dist/types",
-    // "declarationMap": true,
-    // "sourceMap": true,
     "isolatedModules": true,
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": false,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "removeComments": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": ["__test__/**/*.ts"]
