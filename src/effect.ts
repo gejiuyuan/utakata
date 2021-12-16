@@ -1,6 +1,6 @@
 import { ReactiveIdentification } from "./reactive";
-import { CommonFunc } from "./typing";
-import { EMPTY_OBJECT, hasChanged, isFunc, nextTick } from "./utils";
+import { CommonFunc, RefCommon, WatcherSourceGetter } from "./typing";
+import { EMPTY_OBJECT, hasChanged, isFunc, isRef, nextTick } from "./utils";
 
 export let activeEffect: ReactiveEffect | undefined;
 export const effectStack: ReactiveEffect[] = [];
@@ -119,8 +119,8 @@ const INITIAL_WATCHER_VALUE = {}
  * @param options 执行选项
  * @returns 
  */
-export function watch(
-  targetSource: () => ReactiveIdentification | ReactiveIdentification[],
+export function watch<T>(
+  targetSource: RefCommon<T> | WatcherSourceGetter,
   cb: CommonFunc,
   options: WatcherOptions = EMPTY_OBJECT
 ) {
@@ -132,7 +132,12 @@ export function watch(
   // 默认触发机制：响应式数据更新后，异步执行回调任务
   const { flush = WatcherFlush.async, immediate = false } = options;
   // 获取响应式数据的值
-  const targetValueGetter = () => targetSource();
+  const targetValueGetter = (() => {
+    if (isRef(targetSource)) {
+      return () => targetSource.value;
+    }
+    return () => targetSource();
+  })();
   // 旧值
   let oldValue = INITIAL_WATCHER_VALUE;
   // 侦听器的核心处理任务
@@ -162,7 +167,7 @@ export function watch(
     oldValue = _effect.run();
   }
   // 返回侦听器中断者
-  return () => {
+  return function watcherStopper() {
     _effect.stop();
   }
 }

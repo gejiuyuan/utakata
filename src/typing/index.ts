@@ -1,3 +1,4 @@
+import { ReactiveIdentification } from "../reactive";
 import { ReactiveEffect } from "../effect";
 
 export type CommonFunc = (...args: any[]) => any;
@@ -18,3 +19,5 @@ export type RefCommon<T> = {
   deps?: Set<ReactiveEffect>,
   value: T
 }
+
+export type WatcherSourceGetter = () => ReactiveIdentification | ReactiveIdentification[];

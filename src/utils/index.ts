@@ -1,4 +1,4 @@
-import { CommonFunc } from "../typing";
+import { CommonFunc, RefCommon } from "../typing";
 
 export function isFunc(ins: any): ins is CommonFunc {
   return typeof ins === 'function';
@@ -25,3 +25,7 @@ export const nextTick = (() => {
     return Promise.resolve().then(cb);
   }
 })();
+
+export function isRef<T>(ins: any): ins is RefCommon<T> {
+  return ins.__isRef__ === true && Reflect.has(ins, 'deps') && Reflect.has(ins, 'value');
+}

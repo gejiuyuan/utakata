@@ -5,7 +5,12 @@ import { isFunc } from './utils';
 
 export class ComputedImplement<T> {
 
-  deps!: Set<ReactiveEffect>;
+  readonly __isRef__ = true;
+
+  /**
+   * 此处必须初始化赋值，否则编译成js后将不存在该属性
+   */
+  deps?: Set<ReactiveEffect> = void 0;
 
   private _refresh = true;
 
@@ -23,6 +28,10 @@ export class ComputedImplement<T> {
         triggerRef(this);
       }
     })
+    Reflect.defineProperty(this, '__isRef__', {
+      configurable: false,
+      enumerable: false,
+    });
   }
 
   get value() {
