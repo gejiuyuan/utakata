@@ -1,5 +1,5 @@
-import { activeEffect, ReactiveEffect } from "./effect";
-import { PlainObject } from "./typing";
+import { activeEffect, effect, ReactiveEffect } from "./effect";
+import { PlainObject, RefCommon } from "./typing";
 import { hasChanged } from "./utils";
 
 /**
@@ -49,6 +49,14 @@ export function track(target: PlainObject, key: string | symbol) {
   trackEffect(effectFuncDeps);
 }
 
+export function trackRef<T>(ref: RefCommon<T>) {
+  if(isPauseTracking()) {
+    return;
+  }
+  ref.deps ??= new Set;
+  trackEffect(ref.deps);
+}
+
 export function trackEffect(effectFuncDeps: Set<ReactiveEffect>) {
   // 防止重复收集
   shouldTrack = !effectFuncDeps.has(activeEffect!);
@@ -77,10 +85,19 @@ export function trigger(target: PlainObject, key: string | symbol, newValue: any
     return;
   }
   if (hasChanged(newValue, oldValue)) {
-    Array.from(targetEffectFuncSet).forEach(effectFunc => {
-      // 优先执行调度器任务，其次是基础获取任务
-      effectFunc.schduler?.() || effectFunc.run();
-    });
+    triggerEffect(targetEffectFuncSet);
   }
 }
 
+export function triggerRef<T>(ref: RefCommon<T>) {
+  if(ref.deps) {
+    triggerEffect(ref.deps);
+  }
+}
+
+export function triggerEffect(effectFuncDeps: Set<ReactiveEffect>) {
+  for(const effect of effectFuncDeps) {
+    // 优先执行调度器任务，其次是基础获取任务
+    effect.schduler ? effect.schduler() : effect.run();
+  }
+}

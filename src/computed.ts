@@ -1,10 +1,11 @@
+import { trackRef, triggerRef } from "./deps";
 import { ReactiveEffect } from "./effect";
 import { ComputedSetter, ComputedGetter, ComputedOptions } from "./typing";
 import { isFunc } from './utils';
 
 export class ComputedImplement<T> {
 
-  private _deps: Set<ReactiveEffect> = new Set;
+  deps!: Set<ReactiveEffect>;
 
   private _refresh = true;
 
@@ -19,11 +20,13 @@ export class ComputedImplement<T> {
     this.effect = new ReactiveEffect(getter, () => {
       if (!this._refresh) {
         this._refresh = true;
+        triggerRef(this);
       }
     })
   }
 
   get value() {
+    trackRef(this);
     if (this._refresh) {
       this._refresh = false;
       this._value = this.effect.run();
