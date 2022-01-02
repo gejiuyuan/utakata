@@ -1,5 +1,5 @@
-import { activeEffect, effect, ReactiveEffect } from "./effect";
-import { PlainObject, RefCommon } from "./typing";
+import { activeEffect, ReactiveEffect } from "./effect";
+import type { PlainObject, RefCommon } from "./typing";
 import { hasChanged } from "./utils";
 
 /**
@@ -16,6 +16,10 @@ export const objEffectWeakMap = new WeakMap<
 // 是否应该收集依赖
 let shouldTrack = true;
 
+function pauseTrack() {
+  shouldTrack = false;
+}
+
 /**
  * 是否应该暂停追踪依赖
  * @returns 
@@ -25,7 +29,7 @@ let shouldTrack = true;
  *    2、shouldTrack为false
  */
 export function isPauseTracking() {
-  return !shouldTrack && activeEffect === void 0;
+  return !shouldTrack || activeEffect === void 0;
 }
 
 /**
@@ -45,12 +49,12 @@ export function track(target: PlainObject, key: string | symbol) {
   let effectFuncDeps = effectDepMap.get(key);
   if (!effectFuncDeps) {
     effectDepMap.set(key, effectFuncDeps = new Set([activeEffect!]))
-  }  
+  }
   trackEffect(effectFuncDeps);
 }
 
 export function trackRef<T>(ref: RefCommon<T>) {
-  if(isPauseTracking()) {
+  if (isPauseTracking()) {
     return;
   }
   ref.deps ??= new Set;
@@ -59,8 +63,8 @@ export function trackRef<T>(ref: RefCommon<T>) {
 
 export function trackEffect(effectFuncDeps: Set<ReactiveEffect>) {
   // 防止重复收集
-  shouldTrack = !effectFuncDeps.has(activeEffect!);
-  if (shouldTrack) {
+  const isTrack = !effectFuncDeps.has(activeEffect!);
+  if (isTrack) {
     effectFuncDeps.add(activeEffect!);
     // 同时建立响应式数据依赖与activeEffect的双向映射
     activeEffect!.deps.push(effectFuncDeps);
@@ -90,13 +94,13 @@ export function trigger(target: PlainObject, key: string | symbol, newValue: any
 }
 
 export function triggerRef<T>(ref: RefCommon<T>) {
-  if(ref.deps) {
+  if (ref.deps) {
     triggerEffect(ref.deps);
   }
 }
 
 export function triggerEffect(effectFuncDeps: Set<ReactiveEffect>) {
-  for(const effect of effectFuncDeps) {
+  for (const effect of effectFuncDeps) {
     // 优先执行调度器任务，其次是基础获取任务
     effect.schduler ? effect.schduler() : effect.run();
   }
