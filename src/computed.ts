@@ -1,6 +1,6 @@
 import { trackRef, triggerRef } from "./deps";
 import { ReactiveEffect } from "./effect";
-import { ComputedSetter, ComputedGetter, ComputedOptions } from "./typing";
+import type { ComputedSetter, ComputedGetter, ComputedOptions } from "./typing";
 import { isFunc } from './utils';
 
 export class ComputedImplement<T> {
@@ -22,7 +22,7 @@ export class ComputedImplement<T> {
     private readonly getter: ComputedGetter<T>,
     private readonly setter?: ComputedSetter<T>
   ) {
-    this.effect = new ReactiveEffect(getter, () => {
+    this.effect = new ReactiveEffect(this.getter, () => {
       if (!this._refresh) {
         this._refresh = true;
         triggerRef(this);

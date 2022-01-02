@@ -1,6 +1,5 @@
-import { ReactiveIdentification } from "./reactive";
-import { CommonFunc, RefCommon, WatcherSourceGetter } from "./typing";
-import { EMPTY_OBJECT, hasChanged, isFunc, isRef, nextTick } from "./utils";
+import type { CommonFunc, RefCommon, WatcherSourceGetter } from "./typing";
+import { isReactive, EMPTY_OBJECT, hasChanged, isArray, isBoolean, isFunc, isObject, isMap, isSet, isRef, isReferenceType, nextTick, NOOP } from "./utils";
 
 export let activeEffect: ReactiveEffect | undefined;
 export const effectStack: ReactiveEffect[] = [];
@@ -93,6 +92,8 @@ export enum WatcherFlush {
 }
 const watcherFlushValues = Object.values(WatcherFlush);
 
+export type WatcherDeep = boolean | number;
+
 /**
  * watch api执行选项
  */
@@ -105,6 +106,10 @@ export interface WatcherOptions {
    * 是否立即执行
    */
   immediate?: boolean;
+  /**
+   * 深层监听选项
+   */
+  deep?: WatcherDeep;
 }
 
 /**
@@ -130,22 +135,63 @@ export function watch<T>(
     return;
   }
   // 默认触发机制：响应式数据更新后，异步执行回调任务
-  const { flush = WatcherFlush.async, immediate = false } = options;
+  const { flush = WatcherFlush.async, immediate = false, deep = 1 } = options;
+  let isDeep = false;
   // 获取响应式数据的值
   const targetValueGetter = (() => {
     if (isRef(targetSource)) {
       return () => targetSource.value;
     }
-    return () => targetSource();
+    const realDepth = (() => {
+      if (isBoolean(deep)) {
+        return deep ? Infinity : 1;
+      }
+      if (Number.isNaN(deep)) {
+        return -Infinity;
+      }
+      return deep;
+    })();
+    // 如果指定了有效的监听深度（如2层）
+    if (Number.isFinite(realDepth)) {
+      isDeep = true;
+      return () => {
+        let value = targetSource();
+        if (isRef(value) || isReactive(value)) {
+          value = [value];
+        }
+        if (isArray(value)) {
+          for (let i = 0; i < value.length; i++) {
+            new Traverse(value[i]).bfs(realDepth);
+          }
+        }
+        return value;
+      }
+    }
+    // 如果deep为true或Infinity，则递归监听所有子项
+    else if (realDepth === Infinity) {
+      isDeep = true;
+      return () => {
+        const value = targetSource();
+        new Traverse(value).dfs();
+        return value;
+      };
+    }
+    // 其它情况，如deep为0、NaN无效值
+    return NOOP;
   })();
   // 旧值
-  let oldValue = INITIAL_WATCHER_VALUE;
+  let oldValue: any = INITIAL_WATCHER_VALUE;
   // 侦听器的核心处理任务
   const baseJob = () => {
     // 获取响应式数据更新后的值
     const newValue = _effect.run();
-    // 如果新值与旧值不同，就执行回调任务
-    if (hasChanged(newValue, oldValue)) {
+    /**
+     * 满足如下条件，将触发watch回调：
+     *  1、开起了deep深度监听
+     *  2、新值与旧值变了
+     *  3、新值与旧值的其中一项变了
+     */
+    if (isDeep || hasChanged(newValue, oldValue) || isArray(newValue) && newValue.some((val, i) => hasChanged(val, oldValue[i]))) {
       cb.apply(null, [newValue, oldValue === INITIAL_WATCHER_VALUE ? void 0 : oldValue]);
       // 同时将新值为旧值
       oldValue = newValue;
@@ -170,4 +216,59 @@ export function watch<T>(
   return function watcherStopper() {
     _effect.stop();
   }
+}
+
+/**
+ * 响应式数据的深层遍历获取
+ */
+export class Traverse {
+
+  private hashSet = new Set;
+
+  constructor(private readonly value: unknown) { }
+
+  bfs(depth = -Infinity) {
+    const stack = [{ value: this.value, dep: 0 }];
+    while (stack.length) {
+      const item = stack.pop()!;
+      const nextDep = item.dep + 1;
+      if (nextDep > depth) {
+        break;
+      }
+      this.each(item.value, (childValue) => {
+        stack.push({ value: childValue, dep: nextDep });
+      });
+    }
+  }
+
+  dfs(value: unknown = this.value) {
+    this.each(value, this.dfs.bind(this));
+  }
+
+  each(value: unknown, handler: (childValue: unknown) => void) {
+    if (!isReferenceType(value)) {
+      return;
+    }
+    if (this.hashSet.has(value)) {
+      return;
+    }
+    this.hashSet.add(value);
+    if (isRef(value)) {
+      handler(value.value);
+    }
+    else if (isObject(value)) {
+      for (const key in value) {
+        handler(value[key]);
+      }
+    }
+    else if (isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        handler(value[i]);
+      }
+    }
+    else if (isMap(value) || isSet(value)) {
+      value.forEach(handler);
+    }
+  }
+
 }
