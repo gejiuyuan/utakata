@@ -1,10 +1,9 @@
-import { ReactiveIdentification } from "../reactive";
-import { ReactiveEffect } from "../effect";
+import type { ReactiveEffect } from "../effect";
+import type { ReactiveTargetMarker } from "../utils";
 
 export type CommonFunc = (...args: any[]) => any;
 
 export type PlainObject<T = any> = Record<string, T>;
-
 
 export type ComputedGetter<T> = (...args:any[]) => T;
 
@@ -21,3 +20,7 @@ export type RefCommon<T> = {
 }
 
 export type WatcherSourceGetter = () => ReactiveIdentification | ReactiveIdentification[];
+
+export type ReactiveIdentification<T extends object = object> = T & PlainObject & {
+  readonly [ReactiveTargetMarker.__REACTIVE__]?: boolean;
+}

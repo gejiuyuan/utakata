@@ -1,18 +1,6 @@
 import { track, trigger } from "./deps";
-import { PlainObject } from "./typing";
-import { hasChanged, isReferenceType } from "./utils";
-
-export type ReactiveIdentification<T extends object = {}> = T & PlainObject & {
-  readonly [ReactiveTargetMarker.__REACTIVE__]?: boolean;
-}
-
-export enum ReactiveTargetMarker {
-  __REACTIVE__ = '__reactive__',
-}
-
-export const isReactive = (value: any): value is ReactiveIdentification => {
-  return isReferenceType(value) ? Reflect.get(value, ReactiveTargetMarker.__REACTIVE__) : false;
-}
+import type { PlainObject, ReactiveIdentification } from "./typing";
+import { hasChanged, isReferenceType, ReactiveTargetMarker } from "./utils";
 
 export const reactiveTargetMap = new WeakMap<ReactiveIdentification, any>();
 
