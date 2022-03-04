@@ -43,6 +43,22 @@ export class ReactiveEffect {
   run() {
     if (!effectStack.includes(this)) {
       try {
+        /**
+         * 触发响应式数据的getter前，先清除deps依赖
+         * @description 
+         *    此操作主要解决如下问题：
+         *    const obj = reactive({
+                  a: true,
+                  b:  1
+              }) 
+              effect((deps) => {   
+                  console.log(1);
+                  document.body.textContent = obj.a ? obj.b : 0;
+              })
+              默认obj.a为true，所以obj.b也会触发副作用函数收集，但如果obj.a改为false，
+              则无论obj.b怎么改，都会得到0，此时则应该清除obj.b依赖
+         */
+        ReactiveEffect.cleanUpEffect(this);
         effectStack.push(activeEffect = this);
         return this.func();
       } finally {
@@ -52,14 +68,14 @@ export class ReactiveEffect {
       }
     }
   }
-  /**
-   * 终止侦听器
-   */
-  stop() {
-    ReactiveEffect.cleanUpEffect(this);
-  }
 }
 
+/**
+ * 终止侦听器
+ */
+export function stopEffect(effect: ReactiveEffect) {
+  ReactiveEffect.cleanUpEffect(effect);
+}
 
 export function effect(
   func: ReactiveEffectFunc,
@@ -72,9 +88,10 @@ export function effect(
   if (!options || !options.lazy) {
     _effect.run();
   }
-  const runner = _effect.run.bind(_effect);
-  Reflect.set(runner, 'effect', _effect);
-  return runner;
+  return _effect;
+  // const runner = _effect.run.bind(_effect);
+  // Reflect.set(runner, 'effect', _effect);
+  // return runner;
 }
 
 /**
@@ -214,7 +231,7 @@ export function watch<T>(
   }
   // 返回侦听器中断者
   return function watcherStopper() {
-    _effect.stop();
+    stopEffect(_effect);
   }
 }
 

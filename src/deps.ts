@@ -48,7 +48,7 @@ export function track(target: PlainObject, key: string | symbol) {
   }
   let effectFuncDeps = effectDepMap.get(key);
   if (!effectFuncDeps) {
-    effectDepMap.set(key, effectFuncDeps = new Set([activeEffect!]))
+    effectDepMap.set(key, effectFuncDeps = new Set([]))
   }
   trackEffect(effectFuncDeps);
 }
@@ -100,7 +100,8 @@ export function triggerRef<T>(ref: RefCommon<T>) {
 }
 
 export function triggerEffect(effectFuncDeps: Set<ReactiveEffect>) {
-  for (const effect of effectFuncDeps) {
+  // 需要将effectFuncDeps拷贝后再遍历，以防effect.run()中从effectFuncDeps删除effect后又添加进来导致的无限执行问题
+  for (const effect of new Set(effectFuncDeps)) {
     // 优先执行调度器任务，其次是基础获取任务
     effect.schduler ? effect.schduler() : effect.run();
   }
